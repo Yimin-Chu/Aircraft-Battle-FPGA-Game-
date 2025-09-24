@@ -1,4 +1,4 @@
-Aircraft Battle (FPGA Game)
+Aircraft Battle (FPGA Game) Done by Yimin Chu and Zhongyi Wang
 
 Aircraft Battle is a two-player co-op survival game built entirely in Verilog and deployed on the DE1-SoC FPGA development board. The game uses a VGA adapter for pixel rendering and a PS/2 keyboard for user input, creating a classic arcade feel with real hardware logic.
 
