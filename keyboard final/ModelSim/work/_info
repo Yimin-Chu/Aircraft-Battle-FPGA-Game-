@@ -1,0 +1,165 @@
+m255
+K4
+z2
+!s11f MIXED_VERSIONS
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+dD:/modelsimsetup
+vtestbench
+!s110 1732142121
+!i10b 1
+!s100 4@`l8h`W^IKNG7Eh@]ezb1
+Z0 !s11b Dg1SIo80bB@j0V0VzS_@n1
+IoOk2EBeEBCi<mfcW?R=JG3
+Z1 VDg1SIo80bB@j0V0VzS_@n1
+Z2 dC:/Users/chuyi/Desktop/keyboard2/ModelSim
+w1732142000
+Z3 8testbench.v
+Z4 Ftestbench.v
+!i122 14
+L0 3 78
+Z5 OV;L;2020.1;71
+r1
+!s85 0
+31
+Z6 !s108 1732142120.000000
+Z7 !s107 testbench.v|
+Z8 !s90 -reportprogress|300|testbench.v|
+!i113 1
+Z9 tCvgOpt 0
+vvga_adapter
+Z10 !s110 1732142120
+!i10b 1
+!s100 29lR2dXed5RMAJAG?8?Lh3
+R0
+I>Dj2dPd4zoNe;5bbgN4GN2
+R1
+R2
+w1730178310
+8../vga_adapter/vga_adapter.v
+F../vga_adapter/vga_adapter.v
+!i122 13
+L0 51 171
+R5
+r1
+!s85 0
+31
+R6
+Z11 !s107 ../vga_adapter/vga_pll.v|../vga_adapter/vga_controller.v|../vga_adapter/vga_address_translator.v|../vga_adapter/vga_adapter.v|../vga_demo.v|
+Z12 !s90 -reportprogress|300|../vga_demo.v|../vga_adapter/vga_adapter.v|../vga_adapter/vga_address_translator.v|../vga_adapter/vga_controller.v|../vga_adapter/vga_pll.v|
+!i113 1
+R9
+vvga_address_translator
+R10
+!i10b 1
+!s100 X[Kdk=>f]7i9;5BPOiUIF2
+R0
+I;b@26>58T`a`n1XP0A@4I3
+R1
+R2
+Z13 w1729783923
+8../vga_adapter/vga_address_translator.v
+F../vga_adapter/vga_address_translator.v
+!i122 13
+L0 4 32
+R5
+r1
+!s85 0
+31
+R6
+R11
+R12
+!i113 1
+R9
+vvga_controller
+R10
+!i10b 1
+!s100 DKY8MgmYA<k@SFN?K`7BF1
+R0
+IBD8n5FlbeWeO_z0MzF^<M3
+R1
+R2
+w1730179634
+8../vga_adapter/vga_controller.v
+F../vga_adapter/vga_controller.v
+!i122 13
+L0 8 178
+R5
+r1
+!s85 0
+31
+R6
+R11
+R12
+!i113 1
+R9
+vvga_demo
+R10
+!i10b 1
+!s100 d3=NlEMbQh5Mg1B[i1^A22
+R0
+ImWKoQCSYCdF4o:_[7ZZEk0
+R1
+R2
+w1732140441
+8../vga_demo.v
+F../vga_demo.v
+!i122 13
+L0 1 227
+R5
+r1
+!s85 0
+31
+R6
+R11
+R12
+!i113 1
+R9
+vvga_demo_tb
+!s110 1731616903
+!i10b 1
+!s100 >hW4UWH`l_Ze1a8[iJL6I1
+R0
+I@KJGUb`z<1LcQl@1R2eWg1
+R1
+dC:/Users/chuyi/Desktop/movement_player/ModelSim
+w1731616518
+R3
+R4
+!i122 4
+L0 3 69
+R5
+r1
+!s85 0
+31
+!s108 1731616903.000000
+R7
+R8
+!i113 1
+R9
+vvga_pll
+R10
+!i10b 1
+!s100 [lj^Ufn>P3FoQ7fVDBe2h0
+R0
+I7l1]C?K741TFkl<eHZ@Bi1
+R1
+R2
+R13
+8../vga_adapter/vga_pll.v
+F../vga_adapter/vga_pll.v
+!i122 13
+L0 36 41
+R5
+r1
+!s85 0
+31
+R6
+R11
+R12
+!i113 1
+R9

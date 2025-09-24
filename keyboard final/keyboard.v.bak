@@ -1,0 +1,184 @@
+module Keyboard(
+    input CLOCK_50,
+    input [3:0] KEY,
+    
+    inout PS2_CLK,
+    inout PS2_DAT,
+    
+    output W,
+    output A,
+    output S,
+    output D,
+    output Fire,
+    output Restart,
+    output ResetGame
+);
+    input CLOCK_50;
+    input [3:0] KEY;
+    
+    inout PS2_CLK;
+    inout PS2_DAT;
+    
+    output [9:0] LEDR;
+                                                                
+    KeyboardDecoder u0(
+        .clk(CLOCK_50), 
+        .reset(~KEY[0]), 
+        .PS2_CLK(PS2_CLK), 
+        .PS2_DAT(PS2_DAT), 
+        .W(LEDR[0]), 
+        .A(LEDR[1]), 
+        .S(LEDR[2]),
+        .D(LEDR[3]),
+        .Fire(LEDR[4]),         // 新增Fire输出
+        .Restart(LEDR[5]), 
+        .ResetGame(LEDR[6])     // 移动ResetGame到LEDR[6]
+        // 删除了Player1和Player2输出
+    );       
+endmodule
+
+module KeyboardDecoder(clk, reset, PS2_CLK, PS2_DAT, W, A, S, D, Fire, Restart, ResetGame);
+    input clk, reset;
+    
+    inout PS2_CLK;
+    inout PS2_DAT;
+    
+    wire [7:0] key_data;
+    wire key_pressed;  
+    reg [7:0] RawData;
+    output W, A, S, D, Fire, Restart, ResetGame;
+    
+    always @(posedge clk)
+    begin
+        if (reset == 1'b1)
+            RawData <= 8'h00;
+        else if (key_pressed == 1'b1)
+            RawData <= key_data;
+    end
+    
+    control c1(
+        .clk(clk), 
+        .reset(reset), 
+        .Data(RawData), 
+        .W(W), 
+        .A(A), 
+        .S(S),
+        .D(D), 
+        .Fire(Fire),        // 新增Fire输出
+        .restart(Restart),
+        .RG(ResetGame),     
+        .keypressed(key_pressed)
+    );
+    
+    PS2_Controller PS2 (
+        .CLOCK_50(clk),
+        .reset(reset),
+        .PS2_CLK(PS2_CLK),
+        .PS2_DAT(PS2_DAT),
+        .received_data(key_data),
+        .received_data_en(key_pressed)
+    );
+endmodule
+
+module control(clk, reset, Data, W, A, S, D, Fire, restart, RG, keypressed);
+    input clk, reset, keypressed;
+    input [7:0] Data;
+    output reg W, A, S, D, Fire, restart, RG;
+    
+    reg [3:0] cur, nxt;
+    
+    localparam idle        = 4'd0,
+               D_pressed   = 4'd1,
+               A_pressed   = 4'd2,
+               S_pressed   = 4'd3,
+               W_pressed   = 4'd4,
+               fire        = 4'd5,
+               restartgame = 4'd6,
+               resetgame   = 4'd7,
+               load        = 4'd8,
+               wait1       = 4'd9;
+    
+    // PS2协议下WASD和空格键的扫描码
+    localparam W_code     = 8'h1D;
+    localparam A_code     = 8'h1C;
+    localparam S_code     = 8'h1B;
+    localparam D_code     = 8'h23;
+    localparam SPACE_code = 8'h29;  // 空格键扫描码
+    
+    always @(*)
+    begin
+        case (cur)
+            load: begin
+                if (Data == W_code)
+                    nxt = W_pressed;
+                else if (Data == A_code)
+                    nxt = A_pressed;
+                else if (Data == S_code)
+                    nxt = S_pressed;
+                else if (Data == D_code)
+                    nxt = D_pressed;
+                else if (Data == SPACE_code)
+                    nxt = fire;           // 按下空格键进入fire状态
+                else if (Data == 8'h5A)
+                    nxt = restartgame;    // Enter键
+                else if (Data == 8'h76)
+                    nxt = resetgame;      // ESC键
+                else
+                    nxt = idle;
+            end
+            W_pressed:    nxt = (Data == 8'hF0) ? idle : W_pressed;
+            A_pressed:    nxt = (Data == 8'hF0) ? idle : A_pressed;
+            S_pressed:    nxt = (Data == 8'hF0) ? idle : S_pressed;
+            D_pressed:    nxt = (Data == 8'hF0) ? idle : D_pressed;
+            fire:         nxt = (Data == 8'hF0) ? idle : fire;
+            restartgame:  nxt = (Data == 8'hF0) ? idle : restartgame;
+            resetgame:    nxt = (Data == 8'hF0) ? idle : resetgame;
+            idle:         nxt = keypressed ? wait1 : idle;
+            wait1:        nxt = keypressed ? load : wait1;
+            default:      nxt = idle;
+        endcase
+    end
+    
+    always @(*)
+    begin
+        W = 1'b0;
+        A = 1'b0;
+        S = 1'b0;
+        D = 1'b0;
+        Fire = 1'b0;
+        restart = 1'b0;
+        RG = 1'b0;
+        
+        case (cur)
+            W_pressed: begin
+                W = 1'b1;
+            end
+            A_pressed: begin
+                A = 1'b1;
+            end
+            S_pressed: begin
+                S = 1'b1;
+            end
+            D_pressed: begin
+                D = 1'b1;
+            end
+            fire: begin
+                Fire = 1'b1;
+            end
+            restartgame: begin
+                restart = 1'b1;
+            end
+            resetgame: begin
+                RG = 1'b1;
+            end
+        endcase
+    end
+    
+    always @(posedge clk)
+    begin
+        if (reset)
+            cur <= idle;
+        else
+            cur <= nxt;
+    end
+endmodule

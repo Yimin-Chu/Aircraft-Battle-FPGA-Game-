@@ -1,0 +1,988 @@
+module final(
+    input CLOCK_50,
+    input [0:0] SW,           // Switch 0 for firing
+    inout PS2_DAT,
+    inout PS2_CLK,
+	 output [9:0]LEDR,
+    output [7:0] VGA_R, VGA_G, VGA_B,
+    output VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N, VGA_CLK
+);
+	 wire W, A, S, D, Fire, start, ResetGame;
+
+    // 实例化 Keyboard 模块
+    keyboard keyboard_inst(
+        .CLOCK_50(CLOCK_50),
+        .KEY(1'b1), // 根据需要连接复位信号
+        .PS2_DAT(PS2_DAT),
+        .PS2_CLK(PS2_CLK),
+        .W(W),
+        .A(A),
+        .S(S),
+        .D(D),
+        .Fire(Fire),
+        .start(start),//enter
+        .ResetGame(ResetGame),//esc
+        .I(I),
+        .J(J),
+        .K(K),
+        .L(L)
+    );
+
+	 // 将键盘信号赋值给 LEDR
+    assign LEDR[0] = W;
+    assign LEDR[1] = A;
+    assign LEDR[2] = S;
+    assign LEDR[3] = D;
+    assign LEDR[4] = start;//enter
+    assign LEDR[5] = ResetGame;//esc
+    assign LEDR[6] = I;
+    assign LEDR[7] = J;
+    assign LEDR[8] = K;
+    assign LEDR[9] = L;
+
+    // Define an 8x8 spaceship pattern with colors
+    reg [2:0] spaceship_pattern [0:7][0:7];
+    reg [2:0] spaceship2_pattern [0:7][0:7]; // Define a new pattern for spaceship2
+    reg [2:0] skull [0:7][0:7]; // Define a new pattern for a skull face
+    reg [2:0] spaceship3_pattern [0:7][0:7]; // Define a new pattern
+    reg [2:0] spaceship4_pattern [0:7][0:7]; // Define a new pattern
+    reg [2:0] spaceship5_pattern [0:7][0:7];
+    reg [2:0] spaceship6_pattern [0:7][0:7]; // Define a new pattern for spaceship2
+    reg [2:0] spaceship7_pattern [0:7][0:7];
+    reg [2:0] spaceship8_pattern [0:7][0:7]; // Define a new pattern for spaceship2
+
+    reg [2:0] tick_pattern [0:7][0:7]; // Define a tick
+
+    reg [7:0] x_pos [1:8];
+    reg [6:0] y_pos [1:8];
+
+    // Initialize the spaceship pattern with a gun at the tip
+    initial begin
+        // Original spaceship pattern (Blue spaceship)
+spaceship_pattern[0][0] = 3'b000; spaceship_pattern[0][1] = 3'b000; spaceship_pattern[0][2] = 3'b100; spaceship_pattern[0][3] = 3'b100;
+spaceship_pattern[0][4] = 3'b100; spaceship_pattern[0][5] = 3'b100; spaceship_pattern[0][6] = 3'b000; spaceship_pattern[0][7] = 3'b000;
+
+spaceship_pattern[1][0] = 3'b000; spaceship_pattern[1][1] = 3'b100; spaceship_pattern[1][2] = 3'b100; spaceship_pattern[1][3] = 3'b100;
+spaceship_pattern[1][4] = 3'b100; spaceship_pattern[1][5] = 3'b100; spaceship_pattern[1][6] = 3'b100; spaceship_pattern[1][7] = 3'b000;
+
+spaceship_pattern[2][0] = 3'b100; spaceship_pattern[2][1] = 3'b100; spaceship_pattern[2][2] = 3'b100; spaceship_pattern[2][3] = 3'b100;
+spaceship_pattern[2][4] = 3'b100; spaceship_pattern[2][5] = 3'b100; spaceship_pattern[2][6] = 3'b100; spaceship_pattern[2][7] = 3'b100;
+
+spaceship_pattern[3][0] = 3'b100; spaceship_pattern[3][1] = 3'b100; spaceship_pattern[3][2] = 3'b100; spaceship_pattern[3][3] = 3'b101;
+spaceship_pattern[3][4] = 3'b101; spaceship_pattern[3][5] = 3'b100; spaceship_pattern[3][6] = 3'b100; spaceship_pattern[3][7] = 3'b100;
+
+spaceship_pattern[4][0] = 3'b100; spaceship_pattern[4][1] = 3'b100; spaceship_pattern[4][2] = 3'b101; spaceship_pattern[4][3] = 3'b101;
+spaceship_pattern[4][4] = 3'b101; spaceship_pattern[4][5] = 3'b101; spaceship_pattern[4][6] = 3'b100; spaceship_pattern[4][7] = 3'b100;
+
+spaceship_pattern[5][0] = 3'b100; spaceship_pattern[5][1] = 3'b101; spaceship_pattern[5][2] = 3'b101; spaceship_pattern[5][3] = 3'b101;
+spaceship_pattern[5][4] = 3'b101; spaceship_pattern[5][5] = 3'b101; spaceship_pattern[5][6] = 3'b101; spaceship_pattern[5][7] = 3'b100;
+
+spaceship_pattern[6][0] = 3'b000; spaceship_pattern[6][1] = 3'b101; spaceship_pattern[6][2] = 3'b101; spaceship_pattern[6][3] = 3'b101;
+spaceship_pattern[6][4] = 3'b101; spaceship_pattern[6][5] = 3'b101; spaceship_pattern[6][6] = 3'b101; spaceship_pattern[6][7] = 3'b000;
+
+spaceship_pattern[7][0] = 3'b000; spaceship_pattern[7][1] = 3'b000; spaceship_pattern[7][2] = 3'b101; spaceship_pattern[7][3] = 3'b101;
+spaceship_pattern[7][4] = 3'b101; spaceship_pattern[7][5] = 3'b101; spaceship_pattern[7][6] = 3'b000; spaceship_pattern[7][7] = 3'b000;
+
+        // New spaceship pattern for spaceship2 (Red spaceship)
+        spaceship2_pattern[0][0] = 3'b000; spaceship2_pattern[0][1] = 3'b000; spaceship2_pattern[0][2] = 3'b100; spaceship2_pattern[0][3] = 3'b100;
+        spaceship2_pattern[0][4] = 3'b100; spaceship2_pattern[0][5] = 3'b100; spaceship2_pattern[0][6] = 3'b000; spaceship2_pattern[0][7] = 3'b000;
+        spaceship2_pattern[1][0] = 3'b000; spaceship2_pattern[1][1] = 3'b100; spaceship2_pattern[1][2] = 3'b100; spaceship2_pattern[1][3] = 3'b100;
+        spaceship2_pattern[1][4] = 3'b100; spaceship2_pattern[1][5] = 3'b100; spaceship2_pattern[1][6] = 3'b100; spaceship2_pattern[1][7] = 3'b000;
+        spaceship2_pattern[2][0] = 3'b100; spaceship2_pattern[2][1] = 3'b100; spaceship2_pattern[2][2] = 3'b100; spaceship2_pattern[2][3] = 3'b100;
+        spaceship2_pattern[2][4] = 3'b100; spaceship2_pattern[2][5] = 3'b100; spaceship2_pattern[2][6] = 3'b100; spaceship2_pattern[2][7] = 3'b100;
+        spaceship2_pattern[3][0] = 3'b100; spaceship2_pattern[3][1] = 3'b100; spaceship2_pattern[3][2] = 3'b100; spaceship2_pattern[3][3] = 3'b111;
+        spaceship2_pattern[3][4] = 3'b111; spaceship2_pattern[3][5] = 3'b100; spaceship2_pattern[3][6] = 3'b100; spaceship2_pattern[3][7] = 3'b100;
+        spaceship2_pattern[4][0] = 3'b100; spaceship2_pattern[4][1] = 3'b100; spaceship2_pattern[4][2] = 3'b111; spaceship2_pattern[4][3] = 3'b111;
+        spaceship2_pattern[4][4] = 3'b111; spaceship2_pattern[4][5] = 3'b111; spaceship2_pattern[4][6] = 3'b100; spaceship2_pattern[4][7] = 3'b100;
+        spaceship2_pattern[5][0] = 3'b100; spaceship2_pattern[5][1] = 3'b111; spaceship2_pattern[5][2] = 3'b111; spaceship2_pattern[5][3] = 3'b111;
+        spaceship2_pattern[5][4] = 3'b111; spaceship2_pattern[5][5] = 3'b111; spaceship2_pattern[5][6] = 3'b111; spaceship2_pattern[5][7] = 3'b100;
+        spaceship2_pattern[6][0] = 3'b000; spaceship2_pattern[6][1] = 3'b111; spaceship2_pattern[6][2] = 3'b111; spaceship2_pattern[6][3] = 3'b111;
+        spaceship2_pattern[6][4] = 3'b111; spaceship2_pattern[6][5] = 3'b111; spaceship2_pattern[6][6] = 3'b111; spaceship2_pattern[6][7] = 3'b000;
+        spaceship2_pattern[7][0] = 3'b000; spaceship2_pattern[7][1] = 3'b000; spaceship2_pattern[7][2] = 3'b111; spaceship2_pattern[7][3] = 3'b111;
+        spaceship2_pattern[7][4] = 3'b111; spaceship2_pattern[7][5] = 3'b111; spaceship2_pattern[7][6] = 3'b000; spaceship2_pattern[7][7] = 3'b000;
+
+
+
+        skull[0][0] = 3'b000; skull[0][1] = 3'b000; skull[0][2] = 3'b111; skull[0][3] = 3'b111;
+        skull[0][4] = 3'b111; skull[0][5] = 3'b111; skull[0][6] = 3'b000; skull[0][7] = 3'b000;
+        skull[1][0] = 3'b000; skull[1][1] = 3'b111; skull[1][2] = 3'b001; skull[1][3] = 3'b001;
+        skull[1][4] = 3'b001; skull[1][5] = 3'b001; skull[1][6] = 3'b111; skull[1][7] = 3'b000;
+        skull[2][0] = 3'b111; skull[2][1] = 3'b001; skull[2][2] = 3'b001; skull[2][3] = 3'b001;
+        skull[2][4] = 3'b001; skull[2][5] = 3'b001; skull[2][6] = 3'b001; skull[2][7] = 3'b111;
+        skull[3][0] = 3'b111; skull[3][1] = 3'b001; skull[3][2] = 3'b111; skull[3][3] = 3'b001;
+        skull[3][4] = 3'b001; skull[3][5] = 3'b111; skull[3][6] = 3'b001; skull[3][7] = 3'b111;
+        skull[4][0] = 3'b111; skull[4][1] = 3'b001; skull[4][2] = 3'b001; skull[4][3] = 3'b001;
+        skull[4][4] = 3'b001; skull[4][5] = 3'b001; skull[4][6] = 3'b001; skull[4][7] = 3'b111;
+        skull[5][0] = 3'b000; skull[5][1] = 3'b111; skull[5][2] = 3'b001; skull[5][3] = 3'b001;
+        skull[5][4] = 3'b001; skull[5][5] = 3'b001; skull[5][6] = 3'b111; skull[5][7] = 3'b000;
+        skull[6][0] = 3'b000; skull[6][1] = 3'b000; skull[6][2] = 3'b111; skull[6][3] = 3'b111;
+        skull[6][4] = 3'b111; skull[6][5] = 3'b111; skull[6][6] = 3'b000; skull[6][7] = 3'b000;
+        skull[7][0] = 3'b000; skull[7][1] = 3'b000; skull[7][2] = 3'b000; skull[7][3] = 3'b111;
+        skull[7][4] = 3'b111; skull[7][5] = 3'b000; skull[7][6] = 3'b000; skull[7][7] = 3'b000;
+
+spaceship3_pattern[0][0] = 3'b000; spaceship3_pattern[0][1] = 3'b000; spaceship3_pattern[0][2] = 3'b100; spaceship3_pattern[0][3] = 3'b100;
+spaceship3_pattern[0][4] = 3'b100; spaceship3_pattern[0][5] = 3'b100; spaceship3_pattern[0][6] = 3'b000; spaceship3_pattern[0][7] = 3'b000;
+
+spaceship3_pattern[1][0] = 3'b000; spaceship3_pattern[1][1] = 3'b100; spaceship3_pattern[1][2] = 3'b100; spaceship3_pattern[1][3] = 3'b100;
+spaceship3_pattern[1][4] = 3'b100; spaceship3_pattern[1][5] = 3'b100; spaceship3_pattern[1][6] = 3'b100; spaceship3_pattern[1][7] = 3'b000;
+
+spaceship3_pattern[2][0] = 3'b100; spaceship3_pattern[2][1] = 3'b100; spaceship3_pattern[2][2] = 3'b100; spaceship3_pattern[2][3] = 3'b100;
+spaceship3_pattern[2][4] = 3'b100; spaceship3_pattern[2][5] = 3'b100; spaceship3_pattern[2][6] = 3'b100; spaceship3_pattern[2][7] = 3'b100;
+
+spaceship3_pattern[3][0] = 3'b100; spaceship3_pattern[3][1] = 3'b100; spaceship3_pattern[3][2] = 3'b100; spaceship3_pattern[3][3] = 3'b111;
+spaceship3_pattern[3][4] = 3'b111; spaceship3_pattern[3][5] = 3'b100; spaceship3_pattern[3][6] = 3'b100; spaceship3_pattern[3][7] = 3'b100;
+
+spaceship3_pattern[4][0] = 3'b100; spaceship3_pattern[4][1] = 3'b100; spaceship3_pattern[4][2] = 3'b111; spaceship3_pattern[4][3] = 3'b111;
+spaceship3_pattern[4][4] = 3'b111; spaceship3_pattern[4][5] = 3'b111; spaceship3_pattern[4][6] = 3'b100; spaceship3_pattern[4][7] = 3'b100;
+
+spaceship3_pattern[5][0] = 3'b100; spaceship3_pattern[5][1] = 3'b111; spaceship3_pattern[5][2] = 3'b111; spaceship3_pattern[5][3] = 3'b111;
+spaceship3_pattern[5][4] = 3'b111; spaceship3_pattern[5][5] = 3'b111; spaceship3_pattern[5][6] = 3'b111; spaceship3_pattern[5][7] = 3'b100;
+
+spaceship3_pattern[6][0] = 3'b000; spaceship3_pattern[6][1] = 3'b111; spaceship3_pattern[6][2] = 3'b111; spaceship3_pattern[6][3] = 3'b111;
+spaceship3_pattern[6][4] = 3'b111; spaceship3_pattern[6][5] = 3'b111; spaceship3_pattern[6][6] = 3'b111; spaceship3_pattern[6][7] = 3'b000;
+
+spaceship3_pattern[7][0] = 3'b000; spaceship3_pattern[7][1] = 3'b000; spaceship3_pattern[7][2] = 3'b111; spaceship3_pattern[7][3] = 3'b111;
+spaceship3_pattern[7][4] = 3'b111; spaceship3_pattern[7][5] = 3'b111; spaceship3_pattern[7][6] = 3'b000; spaceship3_pattern[7][7] = 3'b000;
+
+
+
+spaceship4_pattern[0][0] = 3'b000; spaceship4_pattern[0][1] = 3'b000; spaceship4_pattern[0][2] = 3'b100; spaceship4_pattern[0][3] = 3'b100;
+spaceship4_pattern[0][4] = 3'b100; spaceship4_pattern[0][5] = 3'b100; spaceship4_pattern[0][6] = 3'b000; spaceship4_pattern[0][7] = 3'b000;
+
+spaceship4_pattern[1][0] = 3'b000; spaceship4_pattern[1][1] = 3'b100; spaceship4_pattern[1][2] = 3'b100; spaceship4_pattern[1][3] = 3'b100;
+spaceship4_pattern[1][4] = 3'b100; spaceship4_pattern[1][5] = 3'b100; spaceship4_pattern[1][6] = 3'b100; spaceship4_pattern[1][7] = 3'b000;
+
+spaceship4_pattern[2][0] = 3'b100; spaceship4_pattern[2][1] = 3'b100; spaceship4_pattern[2][2] = 3'b100; spaceship4_pattern[2][3] = 3'b100;
+spaceship4_pattern[2][4] = 3'b100; spaceship4_pattern[2][5] = 3'b100; spaceship4_pattern[2][6] = 3'b100; spaceship4_pattern[2][7] = 3'b100;
+
+spaceship4_pattern[3][0] = 3'b100; spaceship4_pattern[3][1] = 3'b100; spaceship4_pattern[3][2] = 3'b100; spaceship4_pattern[3][3] = 3'b111;
+spaceship4_pattern[3][4] = 3'b111; spaceship4_pattern[3][5] = 3'b100; spaceship4_pattern[3][6] = 3'b100; spaceship4_pattern[3][7] = 3'b100;
+
+spaceship4_pattern[4][0] = 3'b100; spaceship4_pattern[4][1] = 3'b100; spaceship4_pattern[4][2] = 3'b111; spaceship4_pattern[4][3] = 3'b111;
+spaceship4_pattern[4][4] = 3'b111; spaceship4_pattern[4][5] = 3'b111; spaceship4_pattern[4][6] = 3'b100; spaceship4_pattern[4][7] = 3'b100;
+
+spaceship4_pattern[5][0] = 3'b100; spaceship4_pattern[5][1] = 3'b111; spaceship4_pattern[5][2] = 3'b111; spaceship4_pattern[5][3] = 3'b111;
+spaceship4_pattern[5][4] = 3'b111; spaceship4_pattern[5][5] = 3'b111; spaceship4_pattern[5][6] = 3'b111; spaceship4_pattern[5][7] = 3'b100;
+
+spaceship4_pattern[6][0] = 3'b000; spaceship4_pattern[6][1] = 3'b111; spaceship4_pattern[6][2] = 3'b111; spaceship4_pattern[6][3] = 3'b111;
+spaceship4_pattern[6][4] = 3'b111; spaceship4_pattern[6][5] = 3'b111; spaceship4_pattern[6][6] = 3'b111; spaceship4_pattern[6][7] = 3'b000;
+
+spaceship4_pattern[7][0] = 3'b000; spaceship4_pattern[7][1] = 3'b000; spaceship4_pattern[7][2] = 3'b111; spaceship4_pattern[7][3] = 3'b111;
+spaceship4_pattern[7][4] = 3'b111; spaceship4_pattern[7][5] = 3'b111; spaceship4_pattern[7][6] = 3'b000; spaceship4_pattern[7][7] = 3'b000;
+
+
+        tick_pattern[0][0] = 3'b000; tick_pattern[0][1] = 3'b000; tick_pattern[0][2] = 3'b000; tick_pattern[0][3] = 3'b001;
+        tick_pattern[0][4] = 3'b001; tick_pattern[0][5] = 3'b000; tick_pattern[0][6] = 3'b000; tick_pattern[0][7] = 3'b000;
+
+        tick_pattern[1][0] = 3'b000; tick_pattern[1][1] = 3'b000; tick_pattern[1][2] = 3'b001; tick_pattern[1][3] = 3'b011;
+        tick_pattern[1][4] = 3'b011; tick_pattern[1][5] = 3'b001; tick_pattern[1][6] = 3'b000; tick_pattern[1][7] = 3'b000;
+
+        tick_pattern[2][0] = 3'b000; tick_pattern[2][1] = 3'b000; tick_pattern[2][2] = 3'b011; tick_pattern[2][3] = 3'b111;
+        tick_pattern[2][4] = 3'b111; tick_pattern[2][5] = 3'b011; tick_pattern[2][6] = 3'b000; tick_pattern[2][7] = 3'b000;
+
+        tick_pattern[3][0] = 3'b000; tick_pattern[3][1] = 3'b001; tick_pattern[3][2] = 3'b111; tick_pattern[3][3] = 3'b111;
+        tick_pattern[3][4] = 3'b111; tick_pattern[3][5] = 3'b111; tick_pattern[3][6] = 3'b001; tick_pattern[3][7] = 3'b000;
+
+        tick_pattern[4][0] = 3'b000; tick_pattern[4][1] = 3'b011; tick_pattern[4][2] = 3'b111; tick_pattern[4][3] = 3'b111;
+        tick_pattern[4][4] = 3'b111; tick_pattern[4][5] = 3'b111; tick_pattern[4][6] = 3'b011; tick_pattern[4][7] = 3'b000;
+
+        tick_pattern[5][0] = 3'b001; tick_pattern[5][1] = 3'b111; tick_pattern[5][2] = 3'b111; tick_pattern[5][3] = 3'b111;
+        tick_pattern[5][4] = 3'b111; tick_pattern[5][5] = 3'b111; tick_pattern[5][6] = 3'b111; tick_pattern[5][7] = 3'b001;
+
+        tick_pattern[6][0] = 3'b011; tick_pattern[6][1] = 3'b111; tick_pattern[6][2] = 3'b111; tick_pattern[6][3] = 3'b111;
+        tick_pattern[6][4] = 3'b111; tick_pattern[6][5] = 3'b111; tick_pattern[6][6] = 3'b111; tick_pattern[6][7] = 3'b011;
+
+        tick_pattern[7][0] = 3'b000; tick_pattern[7][1] = 3'b011; tick_pattern[7][2] = 3'b111; tick_pattern[7][3] = 3'b111;
+        tick_pattern[7][4] = 3'b111; tick_pattern[7][5] = 3'b111; tick_pattern[7][6] = 3'b011; tick_pattern[7][7] = 3'b000;
+    
+    
+spaceship5_pattern[0][0] = 3'b000; spaceship5_pattern[0][1] = 3'b000; spaceship5_pattern[0][2] = 3'b100; spaceship5_pattern[0][3] = 3'b100;
+spaceship5_pattern[0][4] = 3'b100; spaceship5_pattern[0][5] = 3'b100; spaceship5_pattern[0][6] = 3'b000; spaceship5_pattern[0][7] = 3'b000;
+
+spaceship5_pattern[1][0] = 3'b000; spaceship5_pattern[1][1] = 3'b100; spaceship5_pattern[1][2] = 3'b100; spaceship5_pattern[1][3] = 3'b100;
+spaceship5_pattern[1][4] = 3'b100; spaceship5_pattern[1][5] = 3'b100; spaceship5_pattern[1][6] = 3'b100; spaceship5_pattern[1][7] = 3'b000;
+
+spaceship5_pattern[2][0] = 3'b100; spaceship5_pattern[2][1] = 3'b100; spaceship5_pattern[2][2] = 3'b100; spaceship5_pattern[2][3] = 3'b100;
+spaceship5_pattern[2][4] = 3'b100; spaceship5_pattern[2][5] = 3'b100; spaceship5_pattern[2][6] = 3'b100; spaceship5_pattern[2][7] = 3'b100;
+
+spaceship5_pattern[3][0] = 3'b100; spaceship5_pattern[3][1] = 3'b100; spaceship5_pattern[3][2] = 3'b100; spaceship5_pattern[3][3] = 3'b101;
+spaceship5_pattern[3][4] = 3'b101; spaceship5_pattern[3][5] = 3'b100; spaceship5_pattern[3][6] = 3'b100; spaceship5_pattern[3][7] = 3'b100;
+
+spaceship5_pattern[4][0] = 3'b100; spaceship5_pattern[4][1] = 3'b100; spaceship5_pattern[4][2] = 3'b101; spaceship5_pattern[4][3] = 3'b101;
+spaceship5_pattern[4][4] = 3'b101; spaceship5_pattern[4][5] = 3'b101; spaceship5_pattern[4][6] = 3'b100; spaceship5_pattern[4][7] = 3'b100;
+
+spaceship5_pattern[5][0] = 3'b100; spaceship5_pattern[5][1] = 3'b101; spaceship5_pattern[5][2] = 3'b101; spaceship5_pattern[5][3] = 3'b101;
+spaceship5_pattern[5][4] = 3'b101; spaceship5_pattern[5][5] = 3'b101; spaceship5_pattern[5][6] = 3'b101; spaceship5_pattern[5][7] = 3'b100;
+
+spaceship5_pattern[6][0] = 3'b000; spaceship5_pattern[6][1] = 3'b101; spaceship5_pattern[6][2] = 3'b101; spaceship5_pattern[6][3] = 3'b101;
+spaceship5_pattern[6][4] = 3'b101; spaceship5_pattern[6][5] = 3'b101; spaceship5_pattern[6][6] = 3'b101; spaceship5_pattern[6][7] = 3'b000;
+
+spaceship5_pattern[7][0] = 3'b000; spaceship5_pattern[7][1] = 3'b000; spaceship5_pattern[7][2] = 3'b101; spaceship5_pattern[7][3] = 3'b101;
+spaceship5_pattern[7][4] = 3'b101; spaceship5_pattern[7][5] = 3'b101; spaceship5_pattern[7][6] = 3'b000; spaceship5_pattern[7][7] = 3'b000;
+
+
+
+spaceship6_pattern[0][0] = 3'b000; spaceship6_pattern[0][1] = 3'b000; spaceship6_pattern[0][2] = 3'b100; spaceship6_pattern[0][3] = 3'b100;
+spaceship6_pattern[0][4] = 3'b100; spaceship6_pattern[0][5] = 3'b100; spaceship6_pattern[0][6] = 3'b000; spaceship6_pattern[0][7] = 3'b000;
+
+spaceship6_pattern[1][0] = 3'b000; spaceship6_pattern[1][1] = 3'b100; spaceship6_pattern[1][2] = 3'b100; spaceship6_pattern[1][3] = 3'b100;
+spaceship6_pattern[1][4] = 3'b100; spaceship6_pattern[1][5] = 3'b100; spaceship6_pattern[1][6] = 3'b100; spaceship6_pattern[1][7] = 3'b000;
+
+spaceship6_pattern[2][0] = 3'b100; spaceship6_pattern[2][1] = 3'b100; spaceship6_pattern[2][2] = 3'b100; spaceship6_pattern[2][3] = 3'b100;
+spaceship6_pattern[2][4] = 3'b100; spaceship6_pattern[2][5] = 3'b100; spaceship6_pattern[2][6] = 3'b100; spaceship6_pattern[2][7] = 3'b100;
+
+spaceship6_pattern[3][0] = 3'b100; spaceship6_pattern[3][1] = 3'b100; spaceship6_pattern[3][2] = 3'b100; spaceship6_pattern[3][3] = 3'b111;
+spaceship6_pattern[3][4] = 3'b111; spaceship6_pattern[3][5] = 3'b100; spaceship6_pattern[3][6] = 3'b100; spaceship6_pattern[3][7] = 3'b100;
+
+spaceship6_pattern[4][0] = 3'b100; spaceship6_pattern[4][1] = 3'b100; spaceship6_pattern[4][2] = 3'b111; spaceship6_pattern[4][3] = 3'b111;
+spaceship6_pattern[4][4] = 3'b111; spaceship6_pattern[4][5] = 3'b111; spaceship6_pattern[4][6] = 3'b100; spaceship6_pattern[4][7] = 3'b100;
+
+spaceship6_pattern[5][0] = 3'b100; spaceship6_pattern[5][1] = 3'b111; spaceship6_pattern[5][2] = 3'b111; spaceship6_pattern[5][3] = 3'b111;
+spaceship6_pattern[5][4] = 3'b111; spaceship6_pattern[5][5] = 3'b111; spaceship6_pattern[5][6] = 3'b111; spaceship6_pattern[5][7] = 3'b100;
+
+spaceship6_pattern[6][0] = 3'b000; spaceship6_pattern[6][1] = 3'b111; spaceship6_pattern[6][2] = 3'b111; spaceship6_pattern[6][3] = 3'b111;
+spaceship6_pattern[6][4] = 3'b111; spaceship6_pattern[6][5] = 3'b111; spaceship6_pattern[6][6] = 3'b111; spaceship6_pattern[6][7] = 3'b000;
+
+spaceship6_pattern[7][0] = 3'b000; spaceship6_pattern[7][1] = 3'b000; spaceship6_pattern[7][2] = 3'b111; spaceship6_pattern[7][3] = 3'b111;
+spaceship6_pattern[7][4] = 3'b111; spaceship6_pattern[7][5] = 3'b111; spaceship6_pattern[7][6] = 3'b000; spaceship6_pattern[7][7] = 3'b000;
+
+
+
+spaceship7_pattern[0][0] = 3'b000; spaceship7_pattern[0][1] = 3'b000; spaceship7_pattern[0][2] = 3'b100; spaceship7_pattern[0][3] = 3'b100;
+spaceship7_pattern[0][4] = 3'b100; spaceship7_pattern[0][5] = 3'b100; spaceship7_pattern[0][6] = 3'b000; spaceship7_pattern[0][7] = 3'b000;
+
+spaceship7_pattern[1][0] = 3'b000; spaceship7_pattern[1][1] = 3'b100; spaceship7_pattern[1][2] = 3'b100; spaceship7_pattern[1][3] = 3'b100;
+spaceship7_pattern[1][4] = 3'b100; spaceship7_pattern[1][5] = 3'b100; spaceship7_pattern[1][6] = 3'b100; spaceship7_pattern[1][7] = 3'b000;
+
+spaceship7_pattern[2][0] = 3'b100; spaceship7_pattern[2][1] = 3'b100; spaceship7_pattern[2][2] = 3'b100; spaceship7_pattern[2][3] = 3'b100;
+spaceship7_pattern[2][4] = 3'b100; spaceship7_pattern[2][5] = 3'b100; spaceship7_pattern[2][6] = 3'b100; spaceship7_pattern[2][7] = 3'b100;
+
+spaceship7_pattern[3][0] = 3'b100; spaceship7_pattern[3][1] = 3'b100; spaceship7_pattern[3][2] = 3'b100; spaceship7_pattern[3][3] = 3'b111;
+spaceship7_pattern[3][4] = 3'b111; spaceship7_pattern[3][5] = 3'b100; spaceship7_pattern[3][6] = 3'b100; spaceship7_pattern[3][7] = 3'b100;
+
+spaceship7_pattern[4][0] = 3'b100; spaceship7_pattern[4][1] = 3'b100; spaceship7_pattern[4][2] = 3'b111; spaceship7_pattern[4][3] = 3'b111;
+spaceship7_pattern[4][4] = 3'b111; spaceship7_pattern[4][5] = 3'b111; spaceship7_pattern[4][6] = 3'b100; spaceship7_pattern[4][7] = 3'b100;
+
+spaceship7_pattern[5][0] = 3'b100; spaceship7_pattern[5][1] = 3'b111; spaceship7_pattern[5][2] = 3'b111; spaceship7_pattern[5][3] = 3'b111;
+spaceship7_pattern[5][4] = 3'b111; spaceship7_pattern[5][5] = 3'b111; spaceship7_pattern[5][6] = 3'b111; spaceship7_pattern[5][7] = 3'b100;
+
+spaceship7_pattern[6][0] = 3'b000; spaceship7_pattern[6][1] = 3'b111; spaceship7_pattern[6][2] = 3'b111; spaceship7_pattern[6][3] = 3'b111;
+spaceship7_pattern[6][4] = 3'b111; spaceship7_pattern[6][5] = 3'b111; spaceship7_pattern[6][6] = 3'b111; spaceship7_pattern[6][7] = 3'b000;
+
+spaceship7_pattern[7][0] = 3'b000; spaceship7_pattern[7][1] = 3'b000; spaceship7_pattern[7][2] = 3'b111; spaceship7_pattern[7][3] = 3'b111;
+spaceship7_pattern[7][4] = 3'b111; spaceship7_pattern[7][5] = 3'b111; spaceship7_pattern[7][6] = 3'b000; spaceship7_pattern[7][7] = 3'b000;
+
+
+
+spaceship8_pattern[0][0] = 3'b000; spaceship8_pattern[0][1] = 3'b000; spaceship8_pattern[0][2] = 3'b100; spaceship8_pattern[0][3] = 3'b100;
+spaceship8_pattern[0][4] = 3'b100; spaceship8_pattern[0][5] = 3'b100; spaceship8_pattern[0][6] = 3'b000; spaceship8_pattern[0][7] = 3'b000;
+
+spaceship8_pattern[1][0] = 3'b000; spaceship8_pattern[1][1] = 3'b100; spaceship8_pattern[1][2] = 3'b100; spaceship8_pattern[1][3] = 3'b100;
+spaceship8_pattern[1][4] = 3'b100; spaceship8_pattern[1][5] = 3'b100; spaceship8_pattern[1][6] = 3'b100; spaceship8_pattern[1][7] = 3'b000;
+
+spaceship8_pattern[2][0] = 3'b100; spaceship8_pattern[2][1] = 3'b100; spaceship8_pattern[2][2] = 3'b100; spaceship8_pattern[2][3] = 3'b100;
+spaceship8_pattern[2][4] = 3'b100; spaceship8_pattern[2][5] = 3'b100; spaceship8_pattern[2][6] = 3'b100; spaceship8_pattern[2][7] = 3'b100;
+
+spaceship8_pattern[3][0] = 3'b100; spaceship8_pattern[3][1] = 3'b100; spaceship8_pattern[3][2] = 3'b100; spaceship8_pattern[3][3] = 3'b111;
+spaceship8_pattern[3][4] = 3'b111; spaceship8_pattern[3][5] = 3'b100; spaceship8_pattern[3][6] = 3'b100; spaceship8_pattern[3][7] = 3'b100;
+
+spaceship8_pattern[4][0] = 3'b100; spaceship8_pattern[4][1] = 3'b100; spaceship8_pattern[4][2] = 3'b111; spaceship8_pattern[4][3] = 3'b111;
+spaceship8_pattern[4][4] = 3'b111; spaceship8_pattern[4][5] = 3'b111; spaceship8_pattern[4][6] = 3'b100; spaceship8_pattern[4][7] = 3'b100;
+
+spaceship8_pattern[5][0] = 3'b100; spaceship8_pattern[5][1] = 3'b111; spaceship8_pattern[5][2] = 3'b111; spaceship8_pattern[5][3] = 3'b111;
+spaceship8_pattern[5][4] = 3'b111; spaceship8_pattern[5][5] = 3'b111; spaceship8_pattern[5][6] = 3'b111; spaceship8_pattern[5][7] = 3'b100;
+
+spaceship8_pattern[6][0] = 3'b000; spaceship8_pattern[6][1] = 3'b111; spaceship8_pattern[6][2] = 3'b111; spaceship8_pattern[6][3] = 3'b111;
+spaceship8_pattern[6][4] = 3'b111; spaceship8_pattern[6][5] = 3'b111; spaceship8_pattern[6][6] = 3'b111; spaceship8_pattern[6][7] = 3'b000;
+
+spaceship8_pattern[7][0] = 3'b000; spaceship8_pattern[7][1] = 3'b000; spaceship8_pattern[7][2] = 3'b111; spaceship8_pattern[7][3] = 3'b111;
+spaceship8_pattern[7][4] = 3'b111; spaceship8_pattern[7][5] = 3'b111; spaceship8_pattern[7][6] = 3'b000; spaceship8_pattern[7][7] = 3'b000;
+
+
+        // Spaceship 1 initial position
+        x_pos[1] = spaceship_x;
+        y_pos[1] = spaceship_y;
+        
+        // Spaceship 2 initial position
+        x_pos[2] = spaceship2_x;
+        y_pos[2] = spaceship2_y;
+        
+        // Spaceship 3 initial position
+        x_pos[3] = spaceship3_x;
+        y_pos[3] = spaceship3_y;
+        
+        // Spaceship 4 initial position
+        x_pos[4] = spaceship4_x;
+        y_pos[4] = spaceship4_y;
+        // Spaceship 1 initial position
+        x_pos[5] = spaceship5_x;
+        y_pos[5] = spaceship5_y;
+        
+        // Spaceship 2 initial position
+        x_pos[6] = spaceship6_x;
+        y_pos[6] = spaceship6_y;
+        
+        // Spaceship 3 initial position
+        x_pos[7] = spaceship7_x;
+        y_pos[7] = spaceship7_y;
+        
+        // Spaceship 4 initial position
+        x_pos[8] = spaceship8_x;
+        y_pos[8] = spaceship8_y;
+    end
+
+    // Spaceship position registers, initialized to center of 160x120 resolution
+    reg [7:0] spaceship_x = 72;   // Initial x position of first spaceship
+    reg [6:0] spaceship_y = 52;   // Initial y position of first spaceship
+
+    // Second spaceship position
+    reg [7:0] spaceship2_x = 0;  // Initial x position of second spaceship
+    reg [6:0] spaceship2_y = 0;  // Initial y position of second spaceship
+
+    reg [7:0] spaceship3_x = 152;   // Initial x position of 3 spaceship
+    reg [6:0] spaceship3_y = 112;   // Initial y position of 3 spaceship
+
+    reg [7:0] spaceship4_x = 72;   // Initial x position of 4 spaceship
+    reg [6:0] spaceship4_y = 112;   // Initial y position of 4 spaceship
+
+    reg [7:0] spaceship5_x = 110;   // Initial x position of 4 spaceship
+    reg [6:0] spaceship5_y = 72;   // Initial y position of 4 spaceship
+
+    reg [7:0] spaceship6_x = 0;  // Initial x position of second spaceship
+    reg [6:0] spaceship6_y = 0;  // Initial y position of second spaceship
+
+    reg [7:0] spaceship7_x = 152;   // Initial x position of 3 spaceship
+    reg [6:0] spaceship7_y = 112;   // Initial y position of 3 spaceship
+
+    reg [7:0] spaceship8_x = 72;   // Initial x position of 4 spaceship
+    reg [6:0] spaceship8_y = 112;   // Initial y position of 4 spaceship
+
+    reg [7:0] skull_x = 72;   // Initial x position of skull
+    reg [6:0] skull_y = 52;   // Initial y position of skull
+
+    reg [7:0] tick_x = 72;   // Initial x position of skull
+    reg [6:0] tick_y = 52;   // Initial y position of skull
+
+    // Projectile properties
+    parameter MAX_PROJECTILES = 10;
+    reg [7:0] projectile_x [0:MAX_PROJECTILES-1];
+    reg [6:0] projectile_y [0:MAX_PROJECTILES-1];
+    reg projectile_active [0:MAX_PROJECTILES-1];
+    
+    // Track previous switch state for detecting changes
+    reg previous_switch_state;
+
+    // VGA position signals
+    reg [7:0] current_x;
+    reg [6:0] current_y;
+    reg [2:0] colour;
+
+    // Debounce logic and movement counter
+    reg [19:0] counter;
+    reg [20:0] movement_counter;
+    reg [22:0] progress_counter;
+    integer i;
+    integer j;
+    integer k;
+    reg found_slot;
+    parameter CLOSE_THRESHOLD = 5;
+    reg [8:0] stateNumber = 0;
+
+    reg [7:0] progres_bar_start_x = 40;
+    reg [6:0] progres_bar_start_y = 5;
+    reg [5:0] progress_bar_height = 5;
+    reg [8:0] progress_bar = 0; // Properly represent enough bits
+    reg [8:0] finish_length = 80;
+
+    reg [16:0] s2_1 = 0;
+    reg [16:0] s2_5 = 0;
+    reg [16:0] s3_1 = 0;
+    reg [16:0] s3_5 = 0;
+    reg [16:0] s4_1 = 0;
+    reg [16:0] s4_5 = 0;
+    reg [16:0] s6_1 = 0;
+    reg [16:0] s6_5 = 0;
+    reg [16:0] s7_1 = 0;
+    reg [16:0] s7_5 = 0;
+    reg [16:0] s8_1 = 0;
+    reg [16:0] s8_5 = 0;
+
+    reg [4:0] stop_flag[1:8];
+    reg display_cover = 1;
+
+    // Initialize projectiles to inactive
+    initial begin
+        for (i = 0; i < MAX_PROJECTILES; i = i + 1) begin
+            projectile_active[i] = 0;
+        end
+        previous_switch_state = SW[0];
+        for (i = 1; i < 9; i = i + 1) begin
+            stop_flag[i] = 0;
+        end
+    end
+
+    always @(posedge CLOCK_50) begin
+        counter <= counter + 1;
+        movement_counter <= movement_counter + 1;
+        progress_counter <= progress_counter + 1;
+        // calculate the distance from each chaser to target
+        s2_1 = (spaceship2_x - spaceship_x)*(spaceship2_x - spaceship_x) + (spaceship2_y - spaceship_y)*(spaceship2_y - spaceship_y);
+        s2_5 = (spaceship2_x - spaceship5_x)*(spaceship2_x - spaceship5_x) + (spaceship2_y - spaceship5_y)*(spaceship2_y - spaceship5_y);
+        s3_1 = (spaceship3_x - spaceship_x)*(spaceship3_x - spaceship_x) + (spaceship3_y - spaceship_y)*(spaceship3_y - spaceship_y);
+        s3_5 = (spaceship3_x - spaceship5_x)*(spaceship3_x - spaceship5_x) + (spaceship3_y - spaceship5_y)*(spaceship3_y - spaceship5_y);
+        s4_1 = (spaceship4_x - spaceship_x)*(spaceship4_x - spaceship_x) + (spaceship4_y - spaceship_y)*(spaceship4_y - spaceship_y);
+        s4_5 = (spaceship4_x - spaceship5_x)*(spaceship4_x - spaceship5_x) + (spaceship4_y - spaceship5_y)*(spaceship4_y - spaceship5_y);
+        s6_1 = (spaceship6_x - spaceship_x)*(spaceship6_x - spaceship_x) + (spaceship6_y - spaceship_y)*(spaceship6_y - spaceship_y);
+        s6_5 = (spaceship6_x - spaceship5_x)*(spaceship6_x - spaceship5_x) + (spaceship6_y - spaceship5_y)*(spaceship6_y - spaceship5_y);
+        s7_1 = (spaceship7_x - spaceship_x)*(spaceship7_x - spaceship_x) + (spaceship7_y - spaceship_y)*(spaceship7_y - spaceship_y);
+        s7_5 = (spaceship7_x - spaceship5_x)*(spaceship7_x - spaceship5_x) + (spaceship7_y - spaceship5_y)*(spaceship7_y - spaceship5_y);
+        s8_1 = (spaceship8_x - spaceship_x)*(spaceship8_x - spaceship_x) + (spaceship8_y - spaceship_y)*(spaceship8_y - spaceship_y);
+        s8_5 = (spaceship8_x - spaceship5_x)*(spaceship8_x - spaceship5_x) + (spaceship8_y - spaceship5_y)*(spaceship8_y - spaceship5_y);
+        // Spaceship 1 initial position
+        x_pos[1] = spaceship_x;
+        y_pos[1] = spaceship_y;
+        
+        // Spaceship 2 initial position
+        x_pos[2] = spaceship2_x;
+        y_pos[2] = spaceship2_y;
+        
+        // Spaceship 3 initial position
+        x_pos[3] = spaceship3_x;
+        y_pos[3] = spaceship3_y;
+        
+        // Spaceship 4 initial position
+        x_pos[4] = spaceship4_x;
+        y_pos[4] = spaceship4_y;
+        // Spaceship 1 initial position
+        x_pos[5] = spaceship5_x;
+        y_pos[5] = spaceship5_y;
+        
+        // Spaceship 2 initial position
+        x_pos[6] = spaceship6_x;
+        y_pos[6] = spaceship6_y;
+        
+        // Spaceship 3 initial position
+        x_pos[7] = spaceship7_x;
+        y_pos[7] = spaceship7_y;
+        
+        // Spaceship 4 initial position
+        x_pos[8] = spaceship8_x;
+        y_pos[8] = spaceship8_y;
+
+        if (counter == 0) begin
+
+            // progress bar update
+            if (progress_counter == 0 && stateNumber == 0) begin
+                progress_bar <= progress_bar + 1;
+            end
+            // if time comes, win
+            if (progress_bar == finish_length && stateNumber == 0) begin
+                stateNumber = 2;
+            end
+
+            if (start && display_cover == 1) begin//start
+                
+                progress_bar <= 0;
+
+                spaceship_x <= 72;   // Initial x position of first spaceship
+                spaceship_y <= 52;   // Initial y position of first spaceship
+
+                spaceship2_x <= 0;  // Initial x position of second spaceship
+                spaceship2_y <= 0;  // Initial y position of second spaceship
+
+                spaceship3_x <= 152;  // Initial x position of third spaceship
+                spaceship3_y <= 112;  // Initial y position of third spaceship
+
+                spaceship4_x <= 72;  // Initial x position of fourth spaceship
+                spaceship4_y <= 112;  // Initial y position of fourth spaceship
+
+                // player 2 control
+                spaceship5_x <= 110;  // Initial x position of fourth spaceship
+                spaceship5_y <= 52;  // Initial y position of fourth spaceship
+
+                spaceship6_x <= 0;  // Initial x position of third spaceship
+                spaceship6_y <= 152;  // Initial y position of third spaceship
+
+                spaceship7_x <= 152;  // Initial x position of fourth spaceship
+                spaceship7_y <= 0;  // Initial y position of fourth spaceship
+
+                spaceship8_x <= 72;  // Initial x position of fourth spaceship
+                spaceship8_y <= 0;  // Initial y position of fourth spaceship
+
+				display_cover <= 0;
+
+                stateNumber = 0;
+            end
+
+            // revive logic
+            if (ResetGame && stateNumber != 0) begin//reset
+
+                progress_bar <= 0;
+
+                spaceship_x <= 72;   // Initial x position of first spaceship
+                spaceship_y <= 52;   // Initial y position of first spaceship
+
+                spaceship2_x <= 0;  // Initial x position of second spaceship
+                spaceship2_y <= 0;  // Initial y position of second spaceship
+
+                spaceship3_x <= 152;  // Initial x position of third spaceship
+                spaceship3_y <= 112;  // Initial y position of third spaceship
+
+                spaceship4_x <= 72;  // Initial x position of fourth spaceship
+                spaceship4_y <= 112;  // Initial y position of fourth spaceship
+
+                // player 2 control
+                spaceship5_x <= 110;  // Initial x position of fourth spaceship
+                spaceship5_y <= 52;  // Initial y position of fourth spaceship
+
+                spaceship6_x <= 0;  // Initial x position of third spaceship
+                spaceship6_y <= 152;  // Initial y position of third spaceship
+
+                spaceship7_x <= 152;  // Initial x position of fourth spaceship
+                spaceship7_y <= 0;  // Initial y position of fourth spaceship
+
+                spaceship8_x <= 72;  // Initial x position of fourth spaceship
+                spaceship8_y <= 0;  // Initial y position of fourth spaceship
+
+                stateNumber = 0;
+            end
+
+            // Spaceship movement: Player 1
+            if (W && spaceship_y > 0)           // Move up
+                spaceship_y <= spaceship_y - 1;
+            if (S && spaceship_y < 112)         // Move down (112 to keep within bounds)
+                spaceship_y <= spaceship_y + 1;
+            if (A && spaceship_x > 0)           // Move left
+                spaceship_x <= spaceship_x - 1;
+            if (D && spaceship_x < 152)         // Move right (152 to keep within bounds)
+                spaceship_x <= spaceship_x + 1;
+
+            // spaceship movement: Player 2
+            if (I && spaceship5_y > 0)           // Move up
+                spaceship5_y <= spaceship5_y - 1;
+            if (K && spaceship5_y < 112)         // Move down (112 to keep within bounds)
+                spaceship5_y <= spaceship5_y + 1;
+            if (J && spaceship5_x > 0)           // Move left
+                spaceship5_x <= spaceship5_x - 1;
+            if (L && spaceship5_x < 152)         // Move right (152 to keep within bounds)
+                spaceship5_x <= spaceship5_x + 1;
+
+            // Bot Ships movement automatic controls
+            if (movement_counter == 0) begin
+            
+            if (stop_flag[1] == 0) begin
+                // Second spaceship moves towards the first spaceship
+                if (s2_1 < s2_5) begin
+                    // update chaser 2 position if closer to ship 1
+                    if (spaceship2_x < spaceship_x)           // Move right to catch the first spaceship
+                        spaceship2_x <= spaceship2_x + 1;
+                    else if (spaceship2_x > spaceship_x)      // Move left to catch the first spaceship
+                        spaceship2_x <= spaceship2_x - 1;
+                    if (spaceship2_y < spaceship_y)           // Move down to catch the first spaceship
+                        spaceship2_y <= spaceship2_y + 1;
+                    else if (spaceship2_y > spaceship_y)      // Move up to catch the first spaceship
+                        spaceship2_y <= spaceship2_y - 1;
+                end else begin
+                    if (spaceship2_x < spaceship5_x)           // Move right to catch the first spaceship
+                        spaceship2_x <= spaceship2_x + 1;
+                    else if (spaceship2_x > spaceship5_x)      // Move left to catch the first spaceship
+                        spaceship2_x <= spaceship2_x - 1;
+
+                    if (spaceship2_y < spaceship5_y)           // Move down to catch the first spaceship
+                        spaceship2_y <= spaceship2_y + 1;
+                    else if (spaceship2_y > spaceship5_y)      // Move up to catch the first spaceship
+                        spaceship2_y <= spaceship2_y - 1;
+                end            
+            end else begin
+                stop_flag[1] <= stop_flag[1] + 1;
+            end
+
+
+            if (stop_flag[6] == 0) begin
+                if (s6_1 < s6_5) begin
+                    if (spaceship6_x < spaceship_x)           // Move right to catch the first spaceship
+                        spaceship6_x <= spaceship6_x + 1;
+                    else if (spaceship6_x > spaceship_x)      // Move left to catch the first spaceship
+                        spaceship6_x <= spaceship6_x - 1;
+                    if (spaceship6_y < spaceship_y)           // Move down to catch the first spaceship
+                        spaceship6_y <= spaceship6_y + 1;
+                    else if (spaceship6_y > spaceship_y)      // Move up to catch the first spaceship
+                        spaceship6_y <= spaceship6_y - 1;
+                end else begin
+                    if (spaceship6_x < spaceship5_x)           // Move right to catch the first spaceship
+                        spaceship6_x <= spaceship6_x + 1;
+                    else if (spaceship6_x > spaceship5_x)      // Move left to catch the first spaceship
+                        spaceship6_x <= spaceship6_x - 1;
+                    if (spaceship6_y < spaceship5_y)           // Move down to catch the first spaceship
+                        spaceship6_y <= spaceship6_y + 1;
+                    else if (spaceship6_y > spaceship5_y)      // Move up to catch the first spaceship
+                        spaceship6_y <= spaceship6_y - 1;
+                end            
+            end else begin
+                stop_flag[6] <= stop_flag[6] + 1;
+            end
+
+
+            if (progress_bar > 25) begin
+
+                if (stop_flag[3] == 0) begin
+                    if (s3_1 < s3_5) begin
+                        if (spaceship3_x < spaceship_x)           // Move right to catch the first spaceship
+                            spaceship3_x <= spaceship3_x + 1;
+                        else if (spaceship3_x > spaceship_x)      // Move left to catch the first spaceship
+                            spaceship3_x <= spaceship3_x - 1;
+
+                        if (spaceship3_y < spaceship_y)           // Move down to catch the first spaceship
+                            spaceship3_y <= spaceship3_y + 1;
+                        else if (spaceship3_y > spaceship_y)      // Move up to catch the first spaceship
+                            spaceship3_y <= spaceship3_y - 1;                
+                    end else begin
+                        if (spaceship3_x < spaceship5_x)           // Move right to catch the first spaceship
+                            spaceship3_x <= spaceship3_x + 1;
+                        else if (spaceship3_x > spaceship5_x)      // Move left to catch the first spaceship
+                            spaceship3_x <= spaceship3_x - 1;
+
+                        if (spaceship3_y < spaceship5_y)           // Move down to catch the first spaceship
+                            spaceship3_y <= spaceship3_y + 1;
+                        else if (spaceship3_y > spaceship5_y)      // Move up to catch the first spaceship
+                            spaceship3_y <= spaceship3_y - 1;
+                    end                
+                end else begin
+                    stop_flag[3] <= stop_flag[3] + 1;
+                end
+
+
+
+            end
+
+            if (progress_bar > 50) begin
+                // Movement Logic for Ship 4
+                if (stop_flag[4] == 0) begin
+                    if (s4_1 < s4_5) begin
+                    if (spaceship4_x < spaceship_x)           // Move right to catch the first spaceship
+                        spaceship4_x <= spaceship4_x + 1;
+                    else if (spaceship4_x > spaceship_x)      // Move left to catch the first spaceship
+                        spaceship4_x <= spaceship4_x - 1;
+                    if (spaceship4_y < spaceship_y)           // Move down to catch the first spaceship
+                        spaceship4_y <= spaceship4_y + 1;
+                    else if (spaceship4_y > spaceship_y)      // Move up to catch the first spaceship
+                        spaceship4_y <= spaceship4_y - 1;                    
+                    end else begin
+                    if (spaceship4_x < spaceship5_x)           // Move right to catch the first spaceship
+                        spaceship4_x <= spaceship4_x + 1;
+                    else if (spaceship4_x > spaceship5_x)      // Move left to catch the first spaceship
+                        spaceship4_x <= spaceship4_x - 1;
+                    if (spaceship4_y < spaceship5_y)           // Move down to catch the first spaceship
+                        spaceship4_y <= spaceship4_y + 1;
+                    else if (spaceship4_y > spaceship5_y)      // Move up to catch the first spaceship
+                        spaceship4_y <= spaceship4_y - 1;      
+                    end
+                end else begin
+                    stop_flag[4] <= stop_flag[4] + 1;
+                end
+
+
+            end
+
+            // Movement Logic for Ship 7
+            if (progress_bar > 60) begin
+                if (stop_flag[7] == 0) begin
+                    if (s7_1 < s7_5) begin
+                    if (spaceship7_x < spaceship_x)           // Move right to catch the first spaceship
+                        spaceship7_x <= spaceship7_x + 1;
+                    else if (spaceship7_x > spaceship_x)      // Move left to catch the first spaceship
+                        spaceship7_x <= spaceship7_x - 1;
+                    if (spaceship7_y < spaceship_y)           // Move down to catch the first spaceship
+                        spaceship7_y <= spaceship7_y + 1;
+                    else if (spaceship7_y > spaceship_y)      // Move up to catch the first spaceship
+                        spaceship7_y <= spaceship7_y - 1;                    
+                    end else begin
+                    if (spaceship7_x < spaceship5_x)           // Move right to catch the first spaceship
+                        spaceship7_x <= spaceship7_x + 1;
+                    else if (spaceship7_x > spaceship5_x)      // Move left to catch the first spaceship
+                        spaceship7_x <= spaceship7_x - 1;
+                    if (spaceship7_y < spaceship5_y)           // Move down to catch the first spaceship
+                        spaceship7_y <= spaceship7_y + 1;
+                    else if (spaceship7_y > spaceship5_y)      // Move up to catch the first spaceship
+                        spaceship7_y <= spaceship7_y - 1;      
+                    end
+                end else begin
+                    stop_flag[7] <= stop_flag[7] + 1;
+                end
+
+                // Movement Logic for Ship 8
+                if (stop_flag[8] == 0) begin
+                    if (s8_1 < s8_5) begin
+                    if (spaceship8_x < spaceship_x)           // Move right to catch the first spaceship
+                        spaceship8_x <= spaceship8_x + 1;
+                    else if (spaceship8_x > spaceship_x)      // Move left to catch the first spaceship
+                        spaceship8_x <= spaceship8_x - 1;
+                    if (spaceship8_y < spaceship_y)           // Move down to catch the first spaceship
+                        spaceship8_y <= spaceship8_y + 1;
+                    else if (spaceship8_y > spaceship_y)      // Move up to catch the first spaceship
+                        spaceship8_y <= spaceship8_y - 1;                    
+                    end else begin
+                    if (spaceship8_x < spaceship5_x)           // Move right to catch the first spaceship
+                        spaceship8_x <= spaceship8_x + 1;
+                    else if (spaceship8_x > spaceship5_x)      // Move left to catch the first spaceship
+                        spaceship8_x <= spaceship8_x - 1;
+                    if (spaceship8_y < spaceship5_y)           // Move down to catch the first spaceship
+                        spaceship8_y <= spaceship8_y + 1;
+                    else if (spaceship8_y > spaceship5_y)      // Move up to catch the first spaceship
+                        spaceship8_y <= spaceship8_y - 1;      
+                    end                
+                end else begin
+                    stop_flag[8] <= stop_flag[8] + 1;
+                end
+
+            end
+
+
+            end
+
+            for (i = 1; i <9; i = i + 1) begin
+                for (j = 1; j < 9; j = j + 1) begin
+                    // increase threshold value
+                    if ((x_pos[i] >= x_pos[j] - CLOSE_THRESHOLD && x_pos[i] <= x_pos[j] + CLOSE_THRESHOLD) &&
+                    (y_pos[i] >= y_pos[j] - CLOSE_THRESHOLD && y_pos[i] <= y_pos[j] + CLOSE_THRESHOLD) && stateNumber == 0 && i != j) begin
+
+                        if (stop_flag[j] == 0) begin
+                            stop_flag[i] <= stop_flag[i] + 1;
+                        end
+                        
+
+                        // caught and die
+                        if (i == 1 || i == 5 || j == 1 || j == 5) begin
+                            progress_bar <= 0;
+
+                            spaceship_x <= 72;   // Initial x position of first spaceship
+                            spaceship_y <= 52;   // Initial y position of first spaceship
+
+                            spaceship2_x <= 0;  // Initial x position of second spaceship
+                            spaceship2_y <= 0;  // Initial y position of second spaceship
+
+                            spaceship3_x <= 152;  // Initial x position of third spaceship
+                            spaceship3_y <= 112;  // Initial y position of third spaceship
+
+                            spaceship4_x <= 72;  // Initial x position of fourth spaceship
+                            spaceship4_y <= 112;  // Initial y position of fourth spaceship
+
+                            // player 2 control
+                            spaceship5_x <= 110;  // Initial x position of fourth spaceship
+                            spaceship5_y <= 52;  // Initial y position of fourth spaceship
+
+                            spaceship6_x <= 0;  // Initial x position of third spaceship
+                            spaceship6_y <= 152;  // Initial y position of third spaceship
+
+                            spaceship7_x <= 152;  // Initial x position of fourth spaceship
+                            spaceship7_y <= 0;  // Initial y position of fourth spaceship
+
+                            spaceship8_x <= 72;  // Initial x position of fourth spaceship
+                            spaceship8_y <= 0;  // Initial y position of fourth spaceship
+
+                            stateNumber = 1;
+                            end
+                        end
+                    end                    
+                end // collision detection for loop
+
+            end // @ count == 0
+
+    end // @ clock edge
+
+
+    hex7seg H0 (progress_bar[3:0], HEX0);
+    hex7seg H1 (progress_bar[7:4], HEX1);
+
+    //printing logic
+    // VGA Adapter instantiation with color logic for spaceship, projectiles, and background
+    always @(posedge CLOCK_50) begin
+
+
+
+    if (display_cover == 0) begin 
+        // Update current_x and current_y to scan through the display
+        if (current_x == 159) begin 
+            current_x <= 0;
+            if (current_y == 119)
+                current_y <= 0;
+            else
+                current_y <= current_y + 1;
+        end else begin
+            current_x <= current_x + 1;
+        end
+
+
+        // Set color based on whether the current pixel is within the spaceship or projectile area
+        colour <= 3'b000; // Default background color
+
+        // If ACTIVE state
+        if (stateNumber == 0) begin
+
+        // Progress Bar SLOT and BAR
+        if (current_x >= progres_bar_start_x - 3 && current_x < (progres_bar_start_x + finish_length + 3) &&
+        current_y >= progres_bar_start_y - 3 && current_y < (progres_bar_start_y + progress_bar_height + 3)) begin
+            colour <= 3'b111;
+        end
+        if (current_x >= progres_bar_start_x && current_x < (progres_bar_start_x + finish_length) &&
+        current_y >= progres_bar_start_y  && current_y < (progres_bar_start_y + progress_bar_height)) begin
+            colour <= 3'b000;
+        end
+        if (current_x >= progres_bar_start_x && current_x < (progres_bar_start_x + progress_bar) &&
+        current_y >= progres_bar_start_y && current_y < (progres_bar_start_y + progress_bar_height)) begin
+            colour <= 3'b010;
+        end
+
+
+        // Draw Projectiles
+        for (i = 0; i < MAX_PROJECTILES; i = i + 1) begin
+            if (projectile_active[i] && current_x == projectile_x[i] && current_y == projectile_y[i]) begin
+                colour <= 3'b111; // White color for projectile
+            end
+        end
+
+
+
+        // Player 1 ship
+        if (current_x >= spaceship_x && current_x < spaceship_x + 8 &&
+            current_y >= spaceship_y && current_y < spaceship_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= spaceship_pattern[current_y - spaceship_y][current_x - spaceship_x];
+        end
+
+        // Check if current pixel is within the second spaceship area
+        if (current_x >= spaceship2_x && current_x < spaceship2_x + 8 &&
+            current_y >= spaceship2_y && current_y < spaceship2_y + 8) begin
+            // Check the spaceship2 pattern to decide if this pixel should be filled
+            colour <= spaceship2_pattern[current_y - spaceship2_y][current_x - spaceship2_x];
+        end
+
+        // ship 3 chaser
+            if (current_x >= spaceship3_x && current_x < spaceship3_x + 8 &&
+                current_y >= spaceship3_y && current_y < spaceship3_y + 8) begin
+                // Check the spaceship2 pattern to decide if this pixel should be filled
+                colour <= spaceship3_pattern[current_y - spaceship3_y][current_x - spaceship3_x];
+            end
+
+
+        // ship 4 chaser
+            if (current_x >= spaceship4_x && current_x < spaceship4_x + 8 &&
+                current_y >= spaceship4_y && current_y < spaceship4_y + 8) begin
+                // Check the spaceship2 pattern to decide if this pixel should be filled
+                colour <= spaceship4_pattern[current_y - spaceship4_y][current_x - spaceship4_x];
+            end
+
+        // Player 2 ship
+        if (current_x >= spaceship5_x && current_x < spaceship5_x + 8 &&
+            current_y >= spaceship5_y && current_y < spaceship5_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= spaceship5_pattern[current_y - spaceship5_y][current_x - spaceship5_x];
+        end
+
+        if (current_x >= spaceship6_x && current_x < spaceship6_x + 8 &&
+            current_y >= spaceship6_y && current_y < spaceship6_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= spaceship6_pattern[current_y - spaceship6_y][current_x - spaceship6_x];
+        end
+        if (current_x >= spaceship7_x && current_x < spaceship7_x + 8 &&
+            current_y >= spaceship7_y && current_y < spaceship7_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= spaceship7_pattern[current_y - spaceship7_y][current_x - spaceship7_x];
+        end
+        if (current_x >= spaceship8_x && current_x < spaceship8_x + 8 &&
+            current_y >= spaceship8_y && current_y < spaceship8_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= spaceship8_pattern[current_y - spaceship8_y][current_x - spaceship8_x];
+        end
+
+        end
+
+    // Loose background
+    if (stateNumber == 1) begin
+        // Set a default background color (e.g., red)
+        colour <= 3'b100; // Red background
+
+        // Check if the current pixel is within the "DIE" pattern area
+        if (current_x >= skull_x && current_x < skull_x + 8 &&
+            current_y >= skull_y && current_y < skull_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= skull[current_y - skull_y][current_x - skull_x];
+        end
+    end
+
+    // win background
+    if (stateNumber == 2) begin
+        colour <= 3'b010;
+
+        if (current_x >= tick_x && current_x < tick_x + 8 &&
+            current_y >= tick_y && current_y < tick_y + 8) begin
+            // Check the spaceship pattern to decide if this pixel should be filled
+            colour <= tick_pattern[current_y - tick_y][current_x - tick_x];
+        end
+    end
+
+
+    end
+
+
+end
+
+
+
+
+
+
+
+
+    vga_adapter VGA (
+        .resetn(1'b1),             // No reset on VGA adapter
+        .clock(CLOCK_50),
+        .colour(colour),
+        .x(current_x),
+        .y(current_y),
+        .plot(1'b1),               // Constant plot signal
+        .VGA_R(VGA_R),
+        .VGA_G(VGA_G),
+        .VGA_B(VGA_B),
+        .VGA_HS(VGA_HS),
+        .VGA_VS(VGA_VS),
+        .VGA_BLANK_N(VGA_BLANK_N),
+        .VGA_SYNC_N(VGA_SYNC_N),
+        .VGA_CLK(VGA_CLK)
+    );
+
+    // VGA adapter configuration parameters
+    defparam VGA.RESOLUTION = "160x120";
+    defparam VGA.MONOCHROME = "FALSE";
+    defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+    defparam VGA.BACKGROUND_IMAGE = "bob.mif"; // Black background
+endmodule
+
+// 7-segment display decoder module
+module hex7seg (hex, display);
+    input [3:0] hex;      // 4-bit input to display
+    output [6:0] display; // Output segments for 7-segment display
+
+    reg [6:0] display;
+
+    // Define display patterns for each hexadecimal value
+    always @ (hex)
+        case (hex)
+            4'h0: display = 7'b1000000;
+            4'h1: display = 7'b1111001;
+            4'h2: display = 7'b0100100;
+            4'h3: display = 7'b0110000;
+            4'h4: display = 7'b0011001;
+            4'h5: display = 7'b0010010;
+            4'h6: display = 7'b0000010;
+            4'h7: display = 7'b1111000;
+            4'h8: display = 7'b0000000;
+            4'h9: display = 7'b0011000;
+            4'hA: display = 7'b0001000;
+            4'hB: display = 7'b0000011;
+            4'hC: display = 7'b1000110;
+            4'hD: display = 7'b0100001;
+            4'hE: display = 7'b0000110;
+            4'hF: display = 7'b0001110;
+        endcase
+endmodule
